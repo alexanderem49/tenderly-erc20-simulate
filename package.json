@@ -1,0 +1,27 @@
+{
+  "name": "tenderly-erc20-simulate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx ts-node test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexanderem49/tenderly-erc20-simulate.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alexanderem49/tenderly-erc20-simulate/issues"
+  },
+  "homepage": "https://github.com/alexanderem49/tenderly-erc20-simulate#readme",
+  "devDependencies": {
+    "@types/node": "^18.16.0",
+    "axios": "^1.3.6",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.4.7",
+    "typescript": "^5.0.4"
+  }
+}
