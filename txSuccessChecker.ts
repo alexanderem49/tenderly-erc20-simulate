@@ -5,7 +5,9 @@ import axios from 'axios';
 import { BigNumber, ethers } from "ethers"
 import erc20Abi from "./abi/Erc20Contract.json";
 
-import usdcAbi from "./abi/tokens/UsdcMainnetContract.json";
+import usdcMainnetAbi from "./abi/tokens/UsdcMainnetContract.json";
+import usdcPolygonAbi from "./abi/tokens/UsdcPolygonContract.json";
+import { hexZeroPad } from 'ethers/lib/utils';
 // TODO: Add ABI for other coins that Smart-X should support 
 
 type TenderlyTx = {
@@ -20,9 +22,11 @@ type TenderlyTx = {
 const { TENDERLY_USER, TENDERLY_PROJECT, TENDERLY_ACCESS_KEY } = process.env;
 
 const mainnetProvider = new ethers.providers.JsonRpcBatchProvider(process.env.MAINNET_URL, 1);
+const polygonProvider = new ethers.providers.JsonRpcBatchProvider(process.env.POLYGON_URL, 137);
 // TODO: Add other networks that Smart-X should support
 
-const usdcMainnet = new ethers.Contract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", usdcAbi, mainnetProvider);
+const usdcMainnet = new ethers.Contract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", usdcMainnetAbi, mainnetProvider);
+const usdcPolygon = new ethers.Contract("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", usdcPolygonAbi, polygonProvider);
 // TODO: Add other coins that Smart-X should support
 
 export async function isErc20TxSuccessful(
@@ -101,7 +105,10 @@ async function getDesiredTokenMintTx(
 ): Promise<TenderlyTx[]> {
     switch (tokenAddress) {
         case usdcMainnet.address:
-            return await mintUsdcTx(mintTo, tokenAmount)
+            return await mintUsdcMainnetTx(mintTo, tokenAmount)
+
+        case usdcPolygon.address:
+            return await mintUsdcPolygonTx(mintTo, tokenAmount)
 
         // TODO: Create a function returning correct token mint calldata
         default:
@@ -109,7 +116,41 @@ async function getDesiredTokenMintTx(
     }
 }
 
-async function mintUsdcTx(
+async function mintUsdcPolygonTx(
+    mintTo: string,
+    tokenAmount: BigNumber
+): Promise<TenderlyTx[]> {
+    const eventId = ethers.utils.id("RoleGranted(bytes32,address,address)");
+    const depositorRole = ethers.utils.id("DEPOSITOR_ROLE");
+
+    const events = await usdcPolygon.queryFilter({
+        address: usdcPolygon.address,
+        topics: [
+            eventId,
+            depositorRole
+        ]
+    });
+    const depositorAddresses = events.map((x) => x.args!.account);
+
+    for (let i = 0; i < depositorAddresses.length; i++) {
+        if (await usdcPolygon.callStatic.hasRole(depositorRole, depositorAddresses[i])) {
+            const mintCalldata = usdcPolygon.interface.encodeFunctionData(
+                "deposit",
+                [mintTo, hexZeroPad(tokenAmount.toHexString(), 32)]
+            );
+
+            return [{
+                from: depositorAddresses[i],
+                to: usdcPolygon.address,
+                input: mintCalldata
+            }]
+        }
+    }
+
+    throw new Error("Depositor was not found");
+}
+
+async function mintUsdcMainnetTx(
     mintTo: string,
     tokenAmount: BigNumber
 ): Promise<TenderlyTx[]> {
