@@ -7,6 +7,7 @@ import erc20Abi from "./abi/Erc20Contract.json";
 
 import usdcMainnetAbi from "./abi/tokens/UsdcMainnetContract.json";
 import usdcPolygonAbi from "./abi/tokens/UsdcPolygonContract.json";
+import usdcOptimismAbi from "./abi/tokens/UsdcOptimismContract.json"
 import { hexZeroPad } from 'ethers/lib/utils';
 // TODO: Add ABI for other coins that Smart-X should support 
 
@@ -23,10 +24,12 @@ const { TENDERLY_USER, TENDERLY_PROJECT, TENDERLY_ACCESS_KEY } = process.env;
 
 const mainnetProvider = new ethers.providers.JsonRpcBatchProvider(process.env.MAINNET_URL, 1);
 const polygonProvider = new ethers.providers.JsonRpcBatchProvider(process.env.POLYGON_URL, 137);
+const optimismProvider = new ethers.providers.JsonRpcBatchProvider(process.env.OPTIMISM_URL, 10);
 // TODO: Add other networks that Smart-X should support
 
 const usdcMainnet = new ethers.Contract("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", usdcMainnetAbi, mainnetProvider);
 const usdcPolygon = new ethers.Contract("0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", usdcPolygonAbi, polygonProvider);
+const usdcOptimism = new ethers.Contract("0x7F5c764cBc14f9669B88837ca1490cCa17c31607", usdcOptimismAbi, optimismProvider);
 // TODO: Add other coins that Smart-X should support
 
 export async function isErc20TxSuccessful(
@@ -110,10 +113,30 @@ async function getDesiredTokenMintTx(
         case usdcPolygon.address:
             return await mintUsdcPolygonTx(mintTo, tokenAmount)
 
+        case usdcOptimism.address:
+            return await mintUsdcOptimismTx(mintTo, tokenAmount)
+
         // TODO: Create a function returning correct token mint calldata
         default:
             throw Error("Unsupported token");
     }
+}
+
+async function mintUsdcOptimismTx(
+    mintTo: string,
+    tokenAmount: BigNumber
+): Promise<TenderlyTx[]> {
+    const minter = await usdcOptimism.callStatic.l2Bridge();
+    const mintCalldata = usdcOptimism.interface.encodeFunctionData(
+        "mint",
+        [mintTo, tokenAmount]
+    )
+
+    return [{
+        from: minter,
+        to: usdcOptimism.address,
+        input: mintCalldata
+    }]
 }
 
 async function mintUsdcPolygonTx(

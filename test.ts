@@ -9,26 +9,27 @@ async function main() {
         ethereumMainnet: 1,
         polygonMainnet: 137,
         optimismGoerli: 420,
+        optimismMainnet: 10
         // Network chain ids can be found here: https://chainlist.org/
     }
 
     ////////////////////////////////////
     // This part is done on the frontend
     const rawTx = await ethers.Wallet.createRandom().signTransaction({
-        to: "0xC2DbaAEA2EfA47EBda3E572aa0e55B742E408BF6",
-        data: "0x47e7ef240000000000000000000000002791Bca1f2de4661ED88A30C99A7a9449Aa841740000000000000000000000000000000000000000000000000000000005f5e100",
+        to: "0x6b55495947F3793597C0777562C37C14cb958097",
+        data: "0x47e7ef240000000000000000000000007F5c764cBc14f9669B88837ca1490cCa17c316070000000000000000000000000000000000000000000000000000000005f5e100",
         value: "0x",
         gasLimit: ethers.BigNumber.from("8000000"),
         gasPrice: "0x",
-        chainId: chainIds.polygonMainnet
+        chainId: chainIds.optimismMainnet
     });
     ////////////////////////////////////
 
     console.time("request");
     const result = await isErc20TxSuccessful(
-        chainIds.polygonMainnet,
+        chainIds.optimismMainnet,
         rawTx,
-        "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        "0x7F5c764cBc14f9669B88837ca1490cCa17c31607",
         "100000000"
     );
     console.timeEnd("request");
